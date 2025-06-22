@@ -1,58 +1,78 @@
 // src/Scanner.js
-import React, { useEffect, useRef, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import React, { useEffect, useState } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 import "./Scanner.css";
 
 function Scanner() {
-  const [scannerActivo, setScannerActivo] = useState(false);
-  const scannerRef = useRef(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanner, setScanner] = useState(null);
 
   useEffect(() => {
-    if (scannerActivo) {
-      const scanner = new Html5QrcodeScanner("reader", {
-        fps: 10,
-        qrbox: 250,
-      });
+    if (isScanning && !scanner) {
+      const html5QrCode = new Html5Qrcode("reader");
 
-      scanner.render(
-        (decodedText) => {
-          // Escribe el texto en el input que esté enfocado
-          if (document.activeElement && document.activeElement.tagName === "INPUT") {
-            document.activeElement.value = decodedText;
-            document.activeElement.dispatchEvent(
-              new Event("input", { bubbles: true })
-            );
+      html5QrCode
+        .start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          (decodedText, decodedResult) => {
+            if (decodedText) {
+              const active = document.activeElement;
+
+              if (
+                active &&
+                active.tagName === "INPUT" &&
+                !active.readOnly &&
+                !active.disabled
+              ) {
+                active.value = decodedText;
+                const inputEvent = new Event("input", { bubbles: true });
+                active.dispatchEvent(inputEvent);
+              } else {
+                alert(
+                  "Por favor hacé clic en un campo donde quieras que se escriba el código"
+                );
+              }
+
+              html5QrCode.clear().then(() => {
+                console.log("Escaneo detenido luego de leer:", decodedText);
+                setIsScanning(false);
+                setScanner(null);
+              });
+            }
+          },
+          (errorMessage) => {
+            console.warn("Error en el escaneo", errorMessage);
           }
-          // Parar el scanner después de una lectura
-          scanner.clear().catch((err) => console.error("Error al detener scanner:", err));
-          setScannerActivo(false);
-        },
-        (error) => {
-          // Solo logueamos errores si querés debug
-          console.warn("Error de escaneo:", error);
-        }
-      );
-
-      scannerRef.current = scanner;
+        )
+        .then(() => {
+          setScanner(html5QrCode);
+        })
+        .catch((err) => {
+          console.error("Error al iniciar el escáner:", err);
+        });
     }
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch((err) => console.error("Error al limpiar scanner:", err));
+      if (scanner) {
+        scanner.stop().then(() => scanner.clear());
       }
     };
-  }, [scannerActivo]);
+  }, [isScanning, scanner]);
 
   const toggleScanner = () => {
-    setScannerActivo((prev) => !prev);
+    setIsScanning(!isScanning);
   };
 
   return (
     <div className="scanner-container">
-      <button className="scanner-btn" onClick={toggleScanner}>
-        {scannerActivo ? "Desactivar escáner" : "Activar escáner"}
+      <button onClick={toggleScanner} className="scanner-button">
+        {isScanning ? "❌ Detener escáner" : "📷 Escanear código de barras"}
       </button>
-      {scannerActivo && <div id="reader" style={{ width: "100%" }}></div>}
+      {isScanning && <div id="reader" className="scanner-reader" />}
     </div>
   );
 }
