@@ -1,0 +1,26 @@
+
+/* Estilo para el componente del escáner */
+#reader {
+  width: 100%;
+  max-width: 400px;
+  margin: 20px auto;
+  padding: 10px;
+  border: 2px solid #ff69b4;
+  border-radius: 10px;
+  background-color: #111;
+}
+
+#reader__dashboard_section_csr, 
+#reader__dashboard_section {
+  background-color: #111;
+  color: white;
+}
+
+#reader__scan_region {
+  border: 2px dashed #ff69b4 !important;
+}
+
+#reader__camera_selection {
+  color: white;
+  background-color: #222;
+}
