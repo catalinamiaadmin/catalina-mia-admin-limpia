@@ -1,26 +1,22 @@
-
-/* Estilo para el componente del escáner */
 #reader {
-  width: 100%;
-  max-width: 400px;
-  margin: 20px auto;
+  border: 2px dashed #ccc;
   padding: 10px;
-  border: 2px solid #ff69b4;
-  border-radius: 10px;
-  background-color: #111;
+  border-radius: 12px;
+  background-color: #fdfdfd;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-#reader__dashboard_section_csr, 
-#reader__dashboard_section {
-  background-color: #111;
+button {
+  background-color: #ff4d4f;
   color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-#reader__scan_region {
-  border: 2px dashed #ff69b4 !important;
-}
-
-#reader__camera_selection {
-  color: white;
-  background-color: #222;
+button:hover {
+  background-color: #d9363e;
 }

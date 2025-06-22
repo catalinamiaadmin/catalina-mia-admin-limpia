@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { db } from "./firebaseConfig";
 import { collection, addDoc } from "firebase/firestore";
+import Scanner from "./Scanner";
 
 function ProductForm() {
   const [nombre, setNombre] = useState("");
@@ -11,6 +12,7 @@ function ProductForm() {
   const [margenRevendedora, setMargenRevendedora] = useState("");
   const [margenFinal, setMargenFinal] = useState("");
   const [stock, setStock] = useState("");
+  const [mostrarScanner, setMostrarScanner] = useState(false); // 👈 Estado para mostrar/ocultar el escáner
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,6 +76,23 @@ function ProductForm() {
         value={codigo}
         onChange={(e) => setCodigo(e.target.value)}
       />
+
+      {/* 🔘 Botón para activar o desactivar escáner */}
+      <button
+        type="button"
+        onClick={() => setMostrarScanner(!mostrarScanner)}
+        style={{ margin: "10px 0", background: "#111", color: "#fff" }}
+      >
+        {mostrarScanner ? "Cerrar escáner" : "Escanear código de barras"}
+      </button>
+
+      {/* 📷 Escáner solo si mostrarScanner es true */}
+      {mostrarScanner && (
+        <div style={{ margin: "10px 0" }}>
+          <Scanner setCodigo={setCodigo} />
+        </div>
+      )}
+
       <input
         type="number"
         placeholder="Precio de compra"
