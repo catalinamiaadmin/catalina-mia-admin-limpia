@@ -1,42 +1,40 @@
-// Scanner.js
 import React, { useEffect } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
-import "./Scanner.css";
+import { Html5Qrcode } from "html5-qrcode";
 
-const Scanner = ({ setCodigo }) => {
+function Scanner({ onScanSuccess }) {
   useEffect(() => {
-    // 1. Crear una nueva instancia del escáner
-    const scanner = new Html5QrcodeScanner("reader", {
-      fps: 10, // 10 cuadros por segundo
-      qrbox: { width: 250, height: 250 },
-    });
+    const scanner = new Html5Qrcode("reader");
 
-    // 2. Lógica cuando detecta un código
-    const onScanSuccess = (decodedText, decodedResult) => {
-      console.log(`Código escaneado: ${decodedText}`);
-      setCodigo(decodedText); // 3. Actualiza el campo en tu app
-      scanner.clear(); // 4. Detiene el escáner luego de un código leído
-    };
-
-    // 5. Mostrar errores si ocurren
-    const onScanFailure = (error) => {
-      console.warn(`Error al escanear: ${error}`);
-    };
-
-    // 6. Iniciar el escaneo
-    scanner.render(onScanSuccess, onScanFailure);
-
-    // 7. Limpiar recursos cuando se desmonta el componente
-    return () => {
-      scanner.clear().catch((error) => {
-        console.error("No se pudo limpiar el escáner", error);
+    scanner
+      .start(
+        { facingMode: "environment" },
+        {
+          fps: 20, // Más fps = más chances de detectar rápido
+          // Sacamos qrbox para que escanee en toda la vista
+        },
+        (decodedText) => {
+          onScanSuccess(decodedText);
+          scanner.stop().catch(() => {});
+        },
+        (errorMessage) => {
+          // Ignoramos errores comunes de escaneo (no es necesario loguearlos)
+        }
+      )
+      .catch((err) => {
+        console.error("No se pudo iniciar el escáner:", err);
       });
+
+    return () => {
+      scanner.stop().catch(() => {});
     };
-  }, [setCodigo]);
+  }, [onScanSuccess]);
 
   return (
-    <div id="reader" style={{ width: "100%", maxWidth: "300px", margin: "auto" }}></div>
+    <div>
+      <p>📷 Escaneá el código de barras:</p>
+      <div id="reader" style={{ width: "100%", maxHeight: "400px" }} />
+    </div>
   );
-};
+}
 
 export default Scanner;
