@@ -1,74 +1,55 @@
-// src/Carrito.js
 import React from "react";
-import { db } from "./firebaseConfig";
-import { collection, addDoc, Timestamp, updateDoc, doc, getDoc } from "firebase/firestore";
-import "./Carrito.css";
-import { useCarrito } from "./CarritoContext";
+import jsPDF from "jspdf";
 
-function Carrito() {
-  const { carrito, setCarrito } = useCarrito();
-
-  const confirmarVentaTotal = async () => {
-    try {
-      for (const item of carrito) {
-        // Guardar la venta
-        await addDoc(collection(db, "ventas"), {
-          productoId: item.productoId,
-          nombre: item.nombre,
-          tipoCliente: item.tipoCliente,
-          cantidad: item.cantidad,
-          precioUnitario: item.precioUnitario,
-          total: item.total,
-          fecha: Timestamp.now()
-        });
-
-        // Descontar stock actual consultando Firestore
-        const productoRef = doc(db, "productos", item.productoId);
-        const productoSnap = await getDoc(productoRef);
-        if (productoSnap.exists()) {
-          const stockActual = productoSnap.data().stock || 0;
-          const nuevoStock = Math.max(stockActual - item.cantidad, 0);
-          await updateDoc(productoRef, { stock: nuevoStock });
-        }
-      }
-
-      alert("✅ Ventas confirmadas y stock actualizado");
-      setCarrito([]);
-    } catch (error) {
-      console.error("Error al registrar ventas:", error);
-      alert("❌ Ocurrió un error al registrar las ventas.");
-    }
+function Carrito({ carrito, venderProductos, vaciarCarrito }) {
+  const calcularTotal = () => {
+    return carrito.reduce(
+      (acc, item) => acc + item.precioFinal * item.cantidad,
+      0
+    );
   };
 
-  const eliminarItem = (index) => {
-    const nuevoCarrito = [...carrito];
-    nuevoCarrito.splice(index, 1);
-    setCarrito(nuevoCarrito);
-  };
+  const generarPresupuestoPDF = () => {
+    const doc = new jsPDF();
+    const fecha = new Date().toLocaleDateString();
 
-  const totalVenta = carrito.reduce((acc, item) => acc + (item.total || 0), 0);
+    doc.setFontSize(16);
+    doc.text("Presupuesto - Catalina Mía", 20, 20);
+    doc.setFontSize(10);
+    doc.text(`Fecha: ${fecha}`, 20, 30);
+    doc.text("Cliente: __________________________", 20, 40);
+
+    let y = 60;
+    doc.setFontSize(12);
+    carrito.forEach((item, i) => {
+      const linea = `- ${item.nombre} x${item.cantidad}: $${item.precioFinal * item.cantidad}`;
+      doc.text(linea, 20, y + i * 10);
+    });
+
+    doc.setFontSize(14);
+    doc.text(`Total: $${calcularTotal()}`, 20, y + carrito.length * 10 + 10);
+
+    doc.save("presupuesto-catalina-mia.pdf");
+  };
 
   return (
-    <div className="carrito-container">
-      <h2>🧾 Carrito de compras</h2>
+    <div>
+      <h2>🧺 Carrito</h2>
       {carrito.length === 0 ? (
-        <p>Carrito vacío</p>
+        <p>No hay productos en el carrito.</p>
       ) : (
         <>
-          {carrito.map((item, i) => (
-            <div key={i} className="carrito-item">
-              <p>
-                {item.nombre} – {item.cantidad} x ${item.precioUnitario} = ${item.total}
-              </p>
-              <button className="btn-eliminar" onClick={() => eliminarItem(i)}>
-                Eliminar
-              </button>
-            </div>
-          ))}
-          <h3>Total: ${totalVenta}</h3>
-          <button className="btn-confirmar" onClick={confirmarVentaTotal}>
-            ✅ Confirmar venta total
-          </button>
+          <ul>
+            {carrito.map((item, i) => (
+              <li key={i}>
+                {item.nombre} x{item.cantidad} - ${item.precioFinal * item.cantidad}
+              </li>
+            ))}
+          </ul>
+          <p><strong>Total:</strong> ${calcularTotal()}</p>
+          <button onClick={venderProductos}>🛒 Vender</button>
+          <button onClick={generarPresupuestoPDF}>📄 Presupuesto</button>
+          <button onClick={vaciarCarrito}>🧹 Vaciar</button>
         </>
       )}
     </div>
