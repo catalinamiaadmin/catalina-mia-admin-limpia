@@ -1,56 +1,54 @@
-import React from "react";
+import React, { useContext } from "react";
+import { CarritoContext } from "./contexts/CarritoContext";
 import jsPDF from "jspdf";
 
-function Carrito({ carrito, venderProductos, vaciarCarrito }) {
-  const calcularTotal = () => {
-    return carrito.reduce(
-      (acc, item) => acc + item.precioFinal * item.cantidad,
-      0
-    );
-  };
+function Carrito() {
+  const { carrito, vaciarCarrito } = useContext(CarritoContext);
 
-  const generarPresupuestoPDF = () => {
+  const total = carrito?.reduce((acc, item) => acc + item.precioFinal * item.cantidad, 0) || 0;
+
+  const generarPresupuesto = () => {
+    if (!carrito || carrito.length === 0) {
+      alert("El carrito está vacío.");
+      return;
+    }
+
     const doc = new jsPDF();
-    const fecha = new Date().toLocaleDateString();
+    doc.setFontSize(18);
+    doc.text("Presupuesto", 20, 20);
 
-    doc.setFontSize(16);
-    doc.text("Presupuesto - Catalina Mía", 20, 20);
-    doc.setFontSize(10);
-    doc.text(`Fecha: ${fecha}`, 20, 30);
-    doc.text("Cliente: __________________________", 20, 40);
-
-    let y = 60;
-    doc.setFontSize(12);
+    let y = 30;
     carrito.forEach((item, i) => {
-      const linea = `- ${item.nombre} x${item.cantidad}: $${item.precioFinal * item.cantidad}`;
-      doc.text(linea, 20, y + i * 10);
+      doc.setFontSize(12);
+      doc.text(`${i + 1}. ${item.nombre} (${item.codigoBarras}) - Cant: ${item.cantidad}`, 20, y);
+      doc.text(`$${item.precioFinal.toFixed(2)} c/u`, 150, y, { align: "right" });
+      y += 10;
     });
 
     doc.setFontSize(14);
-    doc.text(`Total: $${calcularTotal()}`, 20, y + carrito.length * 10 + 10);
+    doc.text(`Total: $${total.toFixed(2)}`, 20, y + 10);
 
-    doc.save("presupuesto-catalina-mia.pdf");
+    doc.save("presupuesto.pdf");
   };
 
   return (
-    <div>
-      <h2>🧺 Carrito</h2>
-      {carrito.length === 0 ? (
-        <p>No hay productos en el carrito.</p>
-      ) : (
+    <div className="carrito">
+      <h2>Carrito</h2>
+      {carrito && carrito.length > 0 ? (
         <>
           <ul>
-            {carrito.map((item, i) => (
-              <li key={i}>
-                {item.nombre} x{item.cantidad} - ${item.precioFinal * item.cantidad}
+            {carrito.map((item, index) => (
+              <li key={index}>
+                {item.nombre} x {item.cantidad} = ${item.precioFinal * item.cantidad}
               </li>
             ))}
           </ul>
-          <p><strong>Total:</strong> ${calcularTotal()}</p>
-          <button onClick={venderProductos}>🛒 Vender</button>
-          <button onClick={generarPresupuestoPDF}>📄 Presupuesto</button>
-          <button onClick={vaciarCarrito}>🧹 Vaciar</button>
+          <p><strong>Total:</strong> ${total}</p>
+          <button onClick={vaciarCarrito}>Vaciar carrito</button>
+          <button onClick={generarPresupuesto}>Generar presupuesto PDF</button>
         </>
+      ) : (
+        <p>El carrito está vacío.</p>
       )}
     </div>
   );
