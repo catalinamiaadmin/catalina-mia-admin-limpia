@@ -1,36 +1,44 @@
 // src/ExportButton.js
 import React from "react";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 
 function ExportButton({ productos }) {
-  const exportarExcel = () => {
-    const data = productos.map((p) => ({
-      Nombre: p.nombre,
-      Marca: p.marca,
-      Código: p.codigoBarras,
-      "Precio Revendedora": p.precioRevendedora,
-      "Precio Final": p.precioFinal,
-      Stock: p.stock
-    }));
+  const exportarAExcel = () => {
+    const encabezado = [
+      "Nombre",
+      "Marca",
+      "Precio de compra",
+      "Margen Revendedora (%)",
+      "Margen Final (%)",
+      "Precio Revendedora",
+      "Precio Final",
+      "Stock"
+    ];
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Productos");
+    const filas = productos.map((p) => [
+      p.nombre,
+      p.marca,
+      p.precioCompra,
+      p.margenRevendedora,
+      p.margenFinal,
+      p.precioRevendedora,
+      p.precioFinal,
+      p.stock
+    ]);
 
-    const excelBuffer = XLSX.write(wb, {
-      bookType: "xlsx",
-      type: "array"
-    });
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [encabezado, ...filas].map((e) => e.join(",")).join("\n");
 
-    const fileData = new Blob([excelBuffer], {
-      type: "application/octet-stream"
-    });
-
-    saveAs(fileData, "Productos_CatalinaMia.xlsx");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "productos.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  return <button onClick={exportarExcel}>📤 Exportar a Excel</button>;
+  return <button onClick={exportarAExcel}>📥 Exportar Excel</button>;
 }
 
 export default ExportButton;

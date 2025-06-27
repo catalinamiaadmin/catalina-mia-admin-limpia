@@ -2,72 +2,58 @@
 import React, { useState } from "react";
 import { db } from "./firebaseConfig";
 import { collection, addDoc } from "firebase/firestore";
-import * as XLSX from "xlsx";
 
 function Importador() {
-  const [productos, setProductos] = useState([]);
-  const [cargando, setCargando] = useState(false);
+  const [texto, setTexto] = useState("");
 
-  const handleArchivo = (e) => {
-    const archivo = e.target.files[0];
-    const lector = new FileReader();
+  const procesarTexto = async () => {
+    const lineas = texto.split("\n").map((linea) => linea.trim()).filter(Boolean);
 
-    lector.onload = (e) => {
-      const datos = new Uint8Array(e.target.result);
-      const libro = XLSX.read(datos, { type: "array" });
-      const hoja = libro.Sheets[libro.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(hoja);
+    for (const linea of lineas) {
+      const partes = linea.split(";");
+      if (partes.length < 6) continue;
 
-      const convertidos = json.map((p) => {
-        const compra = parseFloat(p.precioCompra);
-        const margenRev = parseFloat(p.margenRevendedora);
-        const margenFin = parseFloat(p.margenFinal);
-        return {
-          nombre: p.nombre,
-          marca: p.marca,
-          codigoBarras: p.codigoBarras,
+      const [codigoBarras, nombre, marca, precioCompra, margenRevendedora, margenFinal] = partes;
+
+      const compra = parseFloat(precioCompra);
+      const margenRev = parseFloat(margenRevendedora);
+      const margenFin = parseFloat(margenFinal);
+      const precioRev = compra + (compra * margenRev) / 100;
+      const precioFin = compra + (compra * margenFin) / 100;
+
+      try {
+        await addDoc(collection(db, "productos"), {
+          codigoBarras,
+          nombre,
+          marca,
           precioCompra: compra,
           margenRevendedora: margenRev,
           margenFinal: margenFin,
-          precioRevendedora: compra + (compra * margenRev) / 100,
-          precioFinal: compra + (compra * margenFin) / 100,
-          stock: parseInt(p.stock)
-        };
-      });
-
-      setProductos(convertidos);
-    };
-
-    lector.readAsArrayBuffer(archivo);
-  };
-
-  const importar = async () => {
-    setCargando(true);
-    try {
-      for (let p of productos) {
-        await addDoc(collection(db, "productos"), p);
+          precioRevendedora: precioRev,
+          precioFinal: precioFin,
+          stock: 0
+        });
+      } catch (error) {
+        console.error("Error al importar:", error);
       }
-      alert("✅ Importación completa");
-      setProductos([]);
-    } catch (e) {
-      console.error("Error al importar:", e);
-      alert("❌ Error al importar");
     }
-    setCargando(false);
+
+    alert("Importación completada");
+    setTexto("");
   };
 
   return (
     <div>
-      <h3>📥 Importar productos desde archivo</h3>
-      <input type="file" accept=".xlsx, .xls, .csv" onChange={handleArchivo} />
-      {productos.length > 0 && (
-        <>
-          <p>Productos listos para importar: {productos.length}</p>
-          <button onClick={importar} disabled={cargando}>
-            {cargando ? "Importando..." : "Confirmar Importación"}
-          </button>
-        </>
-      )}
+      <h3>📋 Importador rápido</h3>
+      <textarea
+        rows="6"
+        cols="60"
+        placeholder="Código;Nombre;Marca;Compra;MargenRev;MargenFin"
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+      />
+      <br />
+      <button onClick={procesarTexto}>Importar</button>
     </div>
   );
 }
